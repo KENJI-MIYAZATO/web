@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>情報モラル確認テスト</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral Harmony -->
+    <!-- Application Structure Plan: A single-page quiz application with a clear question display, multiple-choice answers, navigation buttons, and a final score summary. The structure guides the user sequentially through the quiz, providing immediate feedback. This linear flow is optimal for self-study quizzes. User information input fields (year, class, number, name) are added at the start and displayed on the results screen for personalization. -->
+    <!-- Visualization & Content Choices: Questions and answers are presented as text. User interaction involves selecting an answer and navigating. There are no complex data visualizations as the core content is textual knowledge testing. Feedback is provided via dynamic text updates. User input fields are standard HTML form elements. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #334155; /* slate-700 */
+        }
+        .container {
+            max-width: 768px; /* md:max-w-2xl */
+        }
+        .quiz-option {
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+        .quiz-option.selected {
+            background-color: #e0f2f7; /* teal-50 */
+            border-color: #2dd4bf; /* teal-400 */
+        }
+        .quiz-option.correct {
+            background-color: #d1fae5; /* green-100 */
+            border-color: #34d399; /* green-400 */
+        }
+        .quiz-option.incorrect {
+            background-color: #fee2e2; /* red-100 */
+            border-color: #ef4444; /* red-500 */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="container mx-auto bg-white p-8 rounded-xl shadow-lg border border-slate-200">
+        <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 text-orange-600">情報モラル確認テスト</h1>
+        <p class="text-center text-slate-600 mb-8">SNSの適切な利用について、学んだことを確認しましょう！</p>
+
+        <!-- Start Section -->
+        <div id="start-section" class="text-center">
+            <h2 class="text-2xl font-bold mb-4 text-slate-700">回答者情報を入力してください</h2>
+            <div class="space-y-4 mb-8">
+                <div class="flex items-center justify-center space-x-4">
+                    <label for="student-year" class="font-medium">年:</label>
+                    <select id="student-year" class="p-2 border rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                    <label for="student-class" class="font-medium">組:</label>
+                    <select id="student-class" class="p-2 border rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                    <label for="student-number" class="font-medium">番号:</label>
+                    <select id="student-number" class="p-2 border rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+                <div>
+                    <label for="student-name" class="font-medium mb-2">氏名:</label>
+                    <input type="text" id="student-name" placeholder="氏名を入力してください" class="w-full max-w-xs p-2 border rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500">
+                </div>
+            </div>
+            <button id="start-button" class="bg-teal-500 text-white px-8 py-4 rounded-xl text-xl font-bold hover:bg-teal-600 transition-colors shadow-lg">クイズを始める</button>
+        </div>
+
+        <!-- Quiz Section -->
+        <div id="quiz-section" class="hidden">
+            <div class="mb-6">
+                <p id="question-text" class="text-xl font-semibold mb-4"></p>
+                <div id="options-container" class="space-y-3">
+                    <!-- Options will be injected here by JavaScript -->
+                </div>
+            </div>
+            <div id="feedback-area" class="min-h-[40px] text-center mb-6">
+                <p id="feedback-text" class="text-lg font-medium"></p>
+            </div>
+            <div class="flex justify-around">
+                <button id="prev-button" class="bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-bold hover:bg-gray-400 transition-colors hidden">前の問題</button>
+                <button id="next-button" class="bg-orange-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-orange-600 transition-colors">次の問題</button>
+                <button id="submit-button" class="bg-teal-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-teal-600 transition-colors hidden">結果を見る</button>
+            </div>
+        </div>
+
+        <!-- Score Section -->
+        <div id="score-section" class="hidden text-center">
+            <h2 class="text-3xl font-bold mb-4 text-green-600">クイズ結果</h2>
+            <div class="mb-6 text-lg">
+                <p>回答者情報:</p>
+                <p id="result-info" class="font-medium"></p>
+            </div>
+            <p id="score-text" class="text-2xl mb-6">あなたの点数は <span>0</span> 点でした！</p>
+            <p id="score-feedback" class="text-lg text-slate-700 mb-8"></p>
+            <button id="restart-button" class="bg-orange-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-orange-600 transition-colors">もう一度挑戦する</button>
+        </div>
+    </div>
+
+    <script>
+        // クイズの問題データ
+        const questions = [
+            {
+                question: "SNSで悪口を書かれたり、個人情報が勝手に投稿されたりする問題は、何のトラブルに当てはまりますか？",
+                options: ["ネットいじめ", "炎上", "なりすまし", "フェイクニュース"],
+                answer: 0
+            },
+            {
+                question: "「SNS利用の5つのルール」の一つで、「投稿する前に〇〇〇〇！」とされています。〇〇〇〇に入る言葉は何ですか？",
+                options: ["検索する", "許可をもらう", "立ち止まる", "話題にする"],
+                answer: 2
+            },
+            {
+                question: "SNSで広まっている情報が本当かどうかを確かめるために、最も重要な行動は何ですか？",
+                options: ["すぐにリポスト（シェア）する", "友達の意見を聞く", "情報源を確認する", "無視する"],
+                answer: 2
+            },
+            {
+                question: "もし自分がSNSトラブルに巻き込まれてしまったら、最初に誰に相談するのが良いとされていますか？",
+                options: ["SNSの運営会社", "信頼できる大人（保護者や先生）", "警察", "友達"],
+                answer: 1
+            },
+            {
+                question: "SNSに自分の「顔がはっきり写った写真」や「家が特定できる背景の写真」を投稿することの危険性は何ですか？",
+                options: ["いいねが少ない可能性がある", "SNS疲れの原因になる", "個人情報が特定される可能性がある", "友達が嫉妬する可能性がある"],
+                answer: 2
+            },
+            {
+                question: "「SNS利用の5つのルール」にある「SNS疲れを感じたら休む！」が指す行動は何ですか？",
+                options: ["新しいSNSを探す", "デジタルデトックスをする", "友達とSNSについて話し合う", "SNSで愚痴を投稿する"],
+                answer: 1
+            }
+        ];
+
+        // クイズの状態を管理する変数
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let userAnswers = new Array(questions.length).fill(null); // 各問題のユーザーの選択肢を保存
+        let studentInfo = {
+            year: '',
+            class: '',
+            number: '',
+            name: ''
+        };
+
+        // DOM要素の取得
+        const startButton = document.getElementById('start-button');
+        const startSection = document.getElementById('start-section');
+        const quizSection = document.getElementById('quiz-section');
+        const scoreSection = document.getElementById('score-section');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackArea = document.getElementById('feedback-area');
+        const feedbackText = document.getElementById('feedback-text');
+        const prevButton = document.getElementById('prev-button');
+        const nextButton = document.getElementById('next-button');
+        const submitButton = document.getElementById('submit-button');
+        const scoreText = document.getElementById('score-text');
+        const scoreFeedback = document.getElementById('score-feedback');
+        const restartButton = document.getElementById('restart-button');
+
+        // 回答者情報入力フィールド
+        const studentYearSelect = document.getElementById('student-year');
+        const studentClassSelect = document.getElementById('student-class');
+        const studentNumberSelect = document.getElementById('student-number');
+        const studentNameInput = document.getElementById('student-name');
+        const resultInfo = document.getElementById('result-info');
+
+        // イベントリスナーの設定
+        startButton.addEventListener('click', startQuiz);
+        nextButton.addEventListener('click', showNextQuestion);
+        prevButton.addEventListener('click', showPreviousQuestion);
+        submitButton.addEventListener('click', showResults);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // 回答者情報のプルダウンを生成する関数
+        function populateStudentInfoDropdowns() {
+            // 年
+            for (let i = 1; i <= 3; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                studentYearSelect.appendChild(option);
+            }
+            // 組
+            for (let i = 1; i <= 10; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                studentClassSelect.appendChild(option);
+            }
+            // 番号
+            for (let i = 1; i <= 40; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                studentNumberSelect.appendChild(option);
+            }
+        }
+
+        // クイズ開始処理
+        function startQuiz() {
+            // 回答者情報を取得
+            studentInfo.year = studentYearSelect.value;
+            studentInfo.class = studentClassSelect.value;
+            studentInfo.number = studentNumberSelect.value;
+            studentInfo.name = studentNameInput.value.trim();
+
+            if (!studentInfo.name) {
+                alert('氏名を入力してください。');
+                return;
+            }
+
+            startSection.classList.add('hidden');
+            quizSection.classList.remove('hidden');
+            currentQuestionIndex = 0;
+            score = 0;
+            userAnswers.fill(null);
+            loadQuestion();
+            updateNavigationButtons();
+        }
+
+        // 問題の表示
+        function loadQuestion() {
+            const questionData = questions[currentQuestionIndex];
+            questionText.textContent = `Q${currentQuestionIndex + 1}. ${questionData.question}`;
+            optionsContainer.innerHTML = '';
+            feedbackText.textContent = ''; // フィードバックをクリア
+
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.classList.add('quiz-option', 'w-full', 'p-3', 'rounded-lg', 'border', 'border-slate-300', 'text-left', 'hover:bg-slate-100', 'focus:outline-none');
+                button.addEventListener('click', () => selectOption(index));
+                optionsContainer.appendChild(button);
+
+                // 以前に選択した回答がある場合、そのスタイルを適用
+                if (userAnswers[currentQuestionIndex] !== null && userAnswers[currentQuestionIndex] === index) {
+                    button.classList.add('selected');
+                }
+            });
+            updateOptionStyles(false); // 問題ロード時にスタイルをリセット
+        }
+
+        // 選択肢がクリックされた時の処理
+        function selectOption(selectedIndex) {
+            userAnswers[currentQuestionIndex] = selectedIndex;
+
+            // 即座にスタイルを更新
+            Array.from(optionsContainer.children).forEach((button, index) => {
+                button.classList.remove('selected', 'correct', 'incorrect');
+                if (index === selectedIndex) {
+                    button.classList.add('selected');
+                }
+            });
+
+            checkAnswer(selectedIndex); // 回答の正誤をチェックし、フィードバックを表示
+        }
+
+        // 回答の正誤チェックとスタイル更新
+        function checkAnswer(selectedIndex) {
+            const questionData = questions[currentQuestionIndex];
+            const correctIndex = questionData.answer;
+            feedbackText.classList.remove('text-green-600', 'text-red-600');
+
+            if (selectedIndex === correctIndex) {
+                feedbackText.textContent = '正解です！';
+                feedbackText.classList.add('text-green-600');
+            } else {
+                feedbackText.textContent = '不正解です。';
+                feedbackText.classList.add('text-red-600');
+            }
+            updateOptionStyles(true); // 正誤のスタイルを表示
+        }
+
+        // 選択肢のスタイルを更新する関数
+        function updateOptionStyles(showFeedback) {
+            const questionData = questions[currentQuestionIndex];
+            const correctIndex = questionData.answer;
+            const selectedIndex = userAnswers[currentQuestionIndex];
+
+            Array.from(optionsContainer.children).forEach((button, index) => {
+                button.classList.remove('selected', 'correct', 'incorrect');
+                if (showFeedback) { // フィードバック表示時
+                    if (index === correctIndex) {
+                        button.classList.add('correct');
+                    } else if (index === selectedIndex) {
+                        button.classList.add('incorrect');
+                    }
+                } else { // 通常時（問題ロード時）
+                    if (index === selectedIndex) {
+                         button.classList.add('selected');
+                    }
+                }
+                button.disabled = showFeedback; // フィードバック表示後はボタンを無効化
+            });
+        }
+
+        // 次の問題へ進む
+        function showNextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+                updateNavigationButtons();
+            } else {
+                // 最後の問題で「次の問題」がクリックされた場合、結果表示へ
+                showResults();
+            }
+        }
+
+        // 前の問題へ戻る
+        function showPreviousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                loadQuestion();
+                updateNavigationButtons();
+            }
+        }
+
+        // ナビゲーションボタンの表示/非表示を更新
+        function updateNavigationButtons() {
+            //prevButton.classList.toggle('hidden', currentQuestionIndex === 0);
+            nextButton.classList.toggle('hidden', currentQuestionIndex === questions.length - 1);
+            submitButton.classList.toggle('hidden', currentQuestionIndex !== questions.length - 1);
+            
+            // 問題を切り替える際に選択肢を有効にし、フィードバックをクリア
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = false;
+            });
+            feedbackText.textContent = '';
+        }
+
+        // 最終スコアを計算する関数
+        function calculateScore() {
+            let finalScore = 0;
+            questions.forEach((q, index) => {
+                if (userAnswers[index] === q.answer) {
+                    finalScore++;
+                }
+            });
+            return finalScore;
+        }
+
+        // 結果画面の表示
+        function showResults() {
+            scoreSection.classList.remove('hidden');
+            quizSection.classList.add('hidden');
+            
+            score = calculateScore();
+            scoreText.querySelector('span').textContent = `${score}/${questions.length}`;
+
+            // 回答者情報を表示
+            resultInfo.textContent = `${studentInfo.year}年 ${studentInfo.class}組 ${studentInfo.number}番 ${studentInfo.name}さん`;
+
+            let feedbackMessage = '';
+            scoreFeedback.classList.remove('text-green-700', 'text-orange-700', 'text-red-700');
+
+            if (score === questions.length) {
+                feedbackMessage = '満点です！素晴らしい！✨';
+                scoreFeedback.classList.add('text-green-700');
+            } else if (score >= questions.length / 2) {
+                feedbackMessage = 'よくできました！もう少しで満点です！👍';
+                scoreFeedback.classList.add('text-orange-700');
+            } else {
+                feedbackMessage = 'もう一度、授業内容を確認してみましょう！📚';
+                scoreFeedback.classList.add('text-red-700');
+            }
+            scoreFeedback.textContent = feedbackMessage;
+        }
+
+        // クイズをリスタート
+        function restartQuiz() {
+            scoreSection.classList.add('hidden');
+            startSection.classList.remove('hidden'); // 開始画面に戻る
+            // 入力フィールドをリセット
+            studentYearSelect.value = 1;
+            studentClassSelect.value = 1;
+            studentNumberSelect.value = 1;
+            studentNameInput.value = '';
+        }
+
+        // ページロード時にプルダウンを生成
+        window.onload = populateStudentInfoDropdowns;
+    </script>
+</body>
+</html>
